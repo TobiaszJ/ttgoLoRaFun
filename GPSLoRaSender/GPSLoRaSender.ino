@@ -8,7 +8,7 @@ SFE_UBLOX_GPS myGPS;
 char nmeaBuffer[100];
 MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 SSD1306Wire display(0x3c, I2C_SDA, I2C_SCL);
-int wait = 0;
+int wait = 5000;
 unsigned long sendtime;
 
 void setup()
@@ -36,7 +36,8 @@ void setup()
     while (1);
   }
   
-  LoRa.setSignalBandwidth(LoRa_bandwith);
+  LoRa.setSignalBandwidth(LoRa_bandwith);  
+  LoRa.setSyncWord(0x89);
   LoRa.setTxPower(20);
   LoRa.enableCrc();
   display.display();
@@ -62,31 +63,30 @@ void loop()
     }
     display.setTextAlignment(TEXT_ALIGN_LEFT);
   }
-  sendtime = millis();
+  //sendtime = millis();
   LoRa.beginPacket();
   if (nmea.isValid() == true) {
     long latitude_mdeg = nmea.getLatitude();
     long longitude_mdeg = nmea.getLongitude();
 
     display.drawString(0, 0, "Latitude (deg): ");
-    display.drawString(0, 10, String(latitude_mdeg / 1000000.));
+    display.drawString(0, 10, String(latitude_mdeg / 1000000));
     display.drawString(0, 20, "Longitude (deg): ");
-    display.drawString(0, 30, String(longitude_mdeg / 1000000.));
+    display.drawString(0, 30, String(longitude_mdeg / 1000000));
+    display.drawString(0, 40, "# Sat: " + String(nmea.getNumSatellites()));
 
-    LoRa.print("Lat:");
-    LoRa.print("Lat:" + String(latitude_mdeg));
-    LoRa.print(" Long:");
-    LoRa.print(" Long:" + String(longitude_mdeg));
-    LoRa.print(" Bat:");
-    LoRa.print(" Bat:" + String(PMU.getBattVoltage()));
+    LoRa.print("/" + String(latitude_mdeg));
+    LoRa.print("\"" + String(longitude_mdeg));
+    LoRa.print("\"" + String(nmea.getNumSatellites()));
+    LoRa.print("\"" + String(PMU.getBattVoltage())+ "/.");
   } else {
     display.drawString(0, 0, "No Fix - Num. satellites:");
     display.drawString(0, 10, String(nmea.getNumSatellites()));
-    LoRa.print("No Fix - #");
-    LoRa.print(nmea.getNumSatellites());
+    LoRa.print("/\"\"" + String(nmea.getNumSatellites()));
+    LoRa.print("\"" + String(PMU.getBattVoltage())+ "/.");
   }
   LoRa.endPacket();
-  wait = 100*(millis()-sendtime);
+  //wait = 100*(millis()-sendtime);
   display.drawString(0, 50, String(wait));
   display.display();
   
