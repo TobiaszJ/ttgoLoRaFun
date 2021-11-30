@@ -15,8 +15,9 @@ void setup()
     Serial.println("Starting LoRa failed!");
     while (1);
   }
-  LoRa.setSignalBandwidth(LoRa_bandwith);
+  //LoRa.setSignalBandwidth(LoRa_bandwith);
   LoRa.setSyncWord(0x89);
+  LoRa.setSpreadingFactor(12);
   LoRa.enableCrc();
 }
 

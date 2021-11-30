@@ -8,7 +8,7 @@ SFE_UBLOX_GPS myGPS;
 char nmeaBuffer[100];
 MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 SSD1306Wire display(0x3c, I2C_SDA, I2C_SCL);
-int wait = 5000;
+int wait = 1000;
 unsigned long sendtime;
 
 void setup()
@@ -36,8 +36,9 @@ void setup()
     while (1);
   }
   
-  LoRa.setSignalBandwidth(LoRa_bandwith);  
+  //LoRa.setSignalBandwidth(LoRa_bandwith);  
   LoRa.setSyncWord(0x89);
+  LoRa.setSpreadingFactor(12);
   LoRa.setTxPower(20);
   LoRa.enableCrc();
   display.display();
@@ -70,20 +71,20 @@ void loop()
     long longitude_mdeg = nmea.getLongitude();
 
     display.drawString(0, 0, "Latitude (deg): ");
-    display.drawString(0, 10, String(latitude_mdeg / 1000000));
+    display.drawString(0, 10, String((float)latitude_mdeg / 1000000.0));
     display.drawString(0, 20, "Longitude (deg): ");
-    display.drawString(0, 30, String(longitude_mdeg / 1000000));
+    display.drawString(0, 30, String((float)longitude_mdeg / 1000000.0));
     display.drawString(0, 40, "# Sat: " + String(nmea.getNumSatellites()));
 
     LoRa.print("/" + String(latitude_mdeg));
-    LoRa.print("\"" + String(longitude_mdeg));
-    LoRa.print("\"" + String(nmea.getNumSatellites()));
-    LoRa.print("\"" + String(PMU.getBattVoltage())+ "/.");
+    LoRa.print("\\" + String(longitude_mdeg));
+    LoRa.print("\\" + String(nmea.getNumSatellites()));
+    LoRa.print("\\" + String((int)PMU.getBattVoltage())+ "/.");
   } else {
     display.drawString(0, 0, "No Fix - Num. satellites:");
     display.drawString(0, 10, String(nmea.getNumSatellites()));
-    LoRa.print("/\"\"" + String(nmea.getNumSatellites()));
-    LoRa.print("\"" + String(PMU.getBattVoltage())+ "/.");
+    LoRa.print("/\\\\" + String(nmea.getNumSatellites()));
+    LoRa.print("\\" + String((int)PMU.getBattVoltage())+ "/.");
   }
   LoRa.endPacket();
   //wait = 100*(millis()-sendtime);
