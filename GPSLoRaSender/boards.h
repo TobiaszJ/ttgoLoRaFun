@@ -39,6 +39,8 @@ bool initPMU()
   PMU.setPowerOutPut(AXP192_LDO2, AXP202_ON);
   PMU.setPowerOutPut(AXP192_LDO3, AXP202_ON);
 
+  PMU.setChargeControlCur(1800);
+
   pinMode(PMU_IRQ, INPUT_PULLUP);
   attachInterrupt(PMU_IRQ, [] {
     // pmu_irq = true;

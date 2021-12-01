@@ -8,8 +8,7 @@ SFE_UBLOX_GPS myGPS;
 char nmeaBuffer[100];
 MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 SSD1306Wire display(0x3c, I2C_SDA, I2C_SCL);
-int wait = 1000;
-unsigned long sendtime;
+unsigned long sendtime = 0;
 
 void setup()
 {
@@ -35,8 +34,8 @@ void setup()
     display.display();
     while (1);
   }
-  
-  //LoRa.setSignalBandwidth(LoRa_bandwith);  
+
+  //LoRa.setSignalBandwidth(LoRa_bandwith);
   LoRa.setSyncWord(0x89);
   LoRa.setSpreadingFactor(12);
   LoRa.setTxPower(20);
@@ -60,38 +59,46 @@ void loop()
       display.drawString(128, 40, String(PMU.getBattChargeCurrent()) + " mA");
     } else {
       display.drawString(128, 40, "-" + String(PMU.getBattDischargeCurrent()) + " mA");
-      //display.drawString(128, 30, String(PMU.getBattPercentage()) + " %");
     }
     display.setTextAlignment(TEXT_ALIGN_LEFT);
   }
-  //sendtime = millis();
-  LoRa.beginPacket();
+
   if (nmea.isValid() == true) {
     long latitude_mdeg = nmea.getLatitude();
     long longitude_mdeg = nmea.getLongitude();
 
-    display.drawString(0, 0, "Latitude (deg): ");
-    display.drawString(0, 10, String((float)latitude_mdeg / 1000000.0));
-    display.drawString(0, 20, "Longitude (deg): ");
-    display.drawString(0, 30, String((float)longitude_mdeg / 1000000.0));
+    display.drawString(0, 0, "Latitude (deg): " + String((float)latitude_mdeg / 1000000.0));
+    display.drawString(0, 10, "Longitude (deg): " + String((float)longitude_mdeg / 1000000.0));
+    display.drawString(0, 20, "Date: " + String(nmea.getYear()) + "-" + String(nmea.getMonth()) + "-" + String(nmea.getDay()));
+    display.drawString(0, 30, "Time: " + String(nmea.getHour()) + ":" + String(nmea.getMinute()) + ":" + String(nmea.getSecond()));
     display.drawString(0, 40, "# Sat: " + String(nmea.getNumSatellites()));
 
-    LoRa.print("/" + String(latitude_mdeg));
-    LoRa.print("\\" + String(longitude_mdeg));
-    LoRa.print("\\" + String(nmea.getNumSatellites()));
-    LoRa.print("\\" + String((int)PMU.getBattVoltage())+ "/.");
+    if ((sendtime + 8666) < millis()) {
+      LoRa.beginPacket();
+      LoRa.print("-" + String(latitude_mdeg));
+      LoRa.print("-" + String(longitude_mdeg));
+      LoRa.print("-" + String(nmea.getNumSatellites()));
+      LoRa.print("-" + String((int)PMU.getBattVoltage()) + "-.");
+      LoRa.endPacket();
+      sendtime = millis();
+    }
   } else {
     display.drawString(0, 0, "No Fix - Num. satellites:");
     display.drawString(0, 10, String(nmea.getNumSatellites()));
-    LoRa.print("/\\\\" + String(nmea.getNumSatellites()));
-    LoRa.print("\\" + String((int)PMU.getBattVoltage())+ "/.");
+    display.drawString(0, 20, "Date: " + String(nmea.getYear()) + "-" + String(nmea.getMonth()) + "-" + String(nmea.getDay()));
+    display.drawString(0, 30, "Time: " + String(nmea.getHour()) + ":" + String(nmea.getMinute()) + ":" + String(nmea.getSecond()));
+
+    if ((sendtime + 8666) < millis()) {
+      LoRa.beginPacket();
+      LoRa.print("---" + String(nmea.getNumSatellites()));
+      LoRa.print("-" + String((int)PMU.getBattVoltage()) + "-.");
+      LoRa.endPacket();
+      sendtime = millis();
+    }
   }
-  LoRa.endPacket();
-  //wait = 100*(millis()-sendtime);
-  display.drawString(0, 50, String(wait));
+
   display.display();
-  
-  delay(wait); //Don't pound too hard on the I2C bus
+  delay(1000); //Don't pound too hard on the I2C bus
 }
 
 //This function gets called from the SparkFun Ublox Arduino Library
